@@ -76,19 +76,23 @@ if (signature) {
     try {
         const signaturePath = `./uploads/signature_${Date.now()}.png`;
         const base64Data = signature.replace(/^data:image\/png;base64,/, "");
-        
+
         // Сохранение изображения подписи в файл
         fs.writeFileSync(signaturePath, base64Data, 'base64');
 
-        // Добавление текста перед подписью
+        // Добавление текста "Signature:" и изображения в PDF (на той же странице)
+        doc.moveDown();
         doc.fontSize(12).text('Signature:', { align: 'left' });
+
+        // Добавление изображения подписи и инициалы справа от неё
+        const signatureX = doc.x;
+        const signatureY = doc.y;
         
-        // Вставка изображения подписи
-        doc.image(signaturePath, {
-            fit: [300, 150], // Размер изображения
-            align: 'center',
-            valign: 'center'
+        doc.image(signaturePath, signatureX, signatureY, { 
+            fit: [200, 100] 
         });
+        
+        doc.text(`${firstName} ${surname}`, signatureX + 210, signatureY + 40);
 
         // Добавление текущей даты
         const currentDate = new Date().toLocaleDateString('en-GB', { 
@@ -96,10 +100,20 @@ if (signature) {
         });
 
         doc.moveDown();
-        doc.text(`Date: ${currentDate}`, { align: 'left' });
+        doc.text(`Date: ${currentDate}`);
 
         // Удаление временного файла подписи после использования
         fs.unlinkSync(signaturePath);
+
+        // Добавление колонтитула на всех страницах
+        const totalPages = doc.bufferedPageRange().count;
+        for (let i = 0; i < totalPages; i++) {
+            doc.switchToPage(i);
+            doc.fontSize(10)
+               .text(`${currentDate}`, 40, 800, { align: 'left' }) // Дата слева внизу
+               .text(`${firstName} ${surname}`, 500, 800, { align: 'right' }); // Имя и фамилия справа внизу
+        }
+
     } catch (error) {
         console.error('Error processing signature:', error);
     }
