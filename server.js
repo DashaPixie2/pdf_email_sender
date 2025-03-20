@@ -77,35 +77,31 @@ if (signature) {
         const signaturePath = `./uploads/signature_${Date.now()}.png`;
         const base64Data = signature.replace(/^data:image\/png;base64,/, "");
 
-        // Сохранение изображения подписи в файл
+        // Сохраняем файл с подписью
         fs.writeFileSync(signaturePath, base64Data, 'base64');
 
-        // Добавление подписи под текстом
+        // Добавляем заголовок "Signature:"
         doc.moveDown(1);
         doc.fontSize(12).text('Signature:', { align: 'left' });
-        
-        // Позиция для изображения подписи
-        const signatureX = doc.x;
-        const signatureY = doc.y;
 
-        doc.image(signaturePath, signatureX, signatureY, { 
-            fit: [150, 80] 
-        });
+        // Вставляем изображение подписи и задаём позицию и размер
+        const imageBuffer = fs.readFileSync(signaturePath);
+        doc.image(imageBuffer, { fit: [150, 80], align: 'left' });
 
-        // Добавление имени и фамилии справа от подписи
-        doc.text(`${firstName} ${surname}`, signatureX + 160, signatureY + 30);
+        // Добавляем имя и фамилию клиента справа от подписи
+        doc.text(`${firstName} ${surname}`, { align: 'right' });
 
-        // Добавление текущей даты под подписью
+        // Добавляем текущую дату под подписью
         const currentDate = new Date().toLocaleDateString('en-GB', { 
             day: 'numeric', month: 'long', year: 'numeric' 
         });
         doc.moveDown();
-        doc.text(`Date: ${currentDate}`);
+        doc.text(`Date: ${currentDate}`, { align: 'left' });
 
-        // Удаление временного файла подписи после использования
+        // Удаляем файл с подписью после использования
         fs.unlinkSync(signaturePath);
 
-        // Добавление колонтитулов на каждую страницу
+        // Добавляем колонтитулы на каждую страницу
         const totalPages = doc.bufferedPageRange().count;
         for (let i = 0; i < totalPages; i++) {
             doc.switchToPage(i);
@@ -113,7 +109,6 @@ if (signature) {
                .text(`${currentDate}`, 40, 800)
                .text(`${firstName} ${surname}`, 500, 800);
         }
-
     } catch (error) {
         console.error('Error processing signature:', error);
     }
