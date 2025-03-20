@@ -80,38 +80,38 @@ if (signature) {
         // Сохранение изображения подписи в файл
         fs.writeFileSync(signaturePath, base64Data, 'base64');
 
-        // Добавление текста "Signature:" и изображения в PDF (на той же странице)
+        // Добавление подписи на текущей странице, где заканчивается основной текст
         doc.moveDown();
         doc.fontSize(12).text('Signature:', { align: 'left' });
 
-        // Добавление изображения подписи и инициалы справа от неё
+        // Добавление изображения подписи
         const signatureX = doc.x;
         const signatureY = doc.y;
         
         doc.image(signaturePath, signatureX, signatureY, { 
             fit: [200, 100] 
         });
-        
+
+        // Добавление имени и фамилии рядом с подписью
         doc.text(`${firstName} ${surname}`, signatureX + 210, signatureY + 40);
 
-        // Добавление текущей даты
+        // Добавление текущей даты под подписью
         const currentDate = new Date().toLocaleDateString('en-GB', { 
             day: 'numeric', month: 'long', year: 'numeric' 
         });
-
         doc.moveDown();
         doc.text(`Date: ${currentDate}`);
 
         // Удаление временного файла подписи после использования
         fs.unlinkSync(signaturePath);
 
-        // Добавление колонтитула на всех страницах
+        // Добавление колонтитула на текущую страницу (если есть несколько страниц)
         const totalPages = doc.bufferedPageRange().count;
         for (let i = 0; i < totalPages; i++) {
-            doc.switchToPage(i);
+            doc.switchToPage(i); // Переход к каждой странице
             doc.fontSize(10)
-               .text(`${currentDate}`, 40, 800, { align: 'left' }) // Дата слева внизу
-               .text(`${firstName} ${surname}`, 500, 800, { align: 'right' }); // Имя и фамилия справа внизу
+               .text(`${currentDate}`, 40, 800) // Дата слева внизу
+               .text(`${firstName} ${surname}`, 500, 800); // Имя и фамилия справа внизу
         }
 
     } catch (error) {
