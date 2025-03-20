@@ -73,39 +73,37 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
 
     // Добавление подписи клиента (если она существует)
 if (signature) {
-    const signaturePath = `./uploads/signature_${Date.now()}.png`;
-    const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+    try {
+        const signaturePath = `./uploads/signature_${Date.now()}.png`;
+        const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+        
+        // Сохранение изображения подписи в файл
+        fs.writeFileSync(signaturePath, base64Data, 'base64');
 
-    // Сохранение изображения подписи
-    fs.writeFileSync(signaturePath, base64Data, 'base64');
+        // Добавление текста перед подписью
+        doc.fontSize(12).text('Signature:', { align: 'left' });
+        
+        // Вставка изображения подписи
+        doc.image(signaturePath, {
+            fit: [300, 150], // Размер изображения
+            align: 'center',
+            valign: 'center'
+        });
 
-    // Добавление подписи в PDF
-    doc.addPage();
-    doc.fontSize(12).text('Signature:', { align: 'left' });
+        // Добавление текущей даты
+        const currentDate = new Date().toLocaleDateString('en-GB', { 
+            day: 'numeric', month: 'long', year: 'numeric' 
+        });
 
-    doc.image(signaturePath, {
-        fit: [500, 200],
-        align: 'center',
-        valign: 'center'
-    });
+        doc.moveDown();
+        doc.text(`Date: ${currentDate}`, { align: 'left' });
 
-    // Добавление текущей даты
-    const currentDate = new Date().toLocaleDateString('en-GB', { 
-        day: 'numeric', month: 'long', year: 'numeric' 
-    });
-
-    doc.moveDown();
-    doc.text(`Date: ${currentDate}`, { align: 'left' });
-
-    // Удаление временного файла подписи
-    fs.unlinkSync(signaturePath);
+        // Удаление временного файла подписи после использования
+        fs.unlinkSync(signaturePath);
+    } catch (error) {
+        console.error('Error processing signature:', error);
+    }
 }
-
-
-    // Добавление текущей даты
-    const currentDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-    doc.moveDown();
-    doc.text(`Date of Submission: ${currentDate}`, { align: 'right' });
 
     doc.end();
 
