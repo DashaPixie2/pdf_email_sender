@@ -1,79 +1,90 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const nodemailer = require("nodemailer");
-const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const app = express();
-const port = 10000;
+// server.js
 
-app.use(bodyParser.json());
+const express = require('express');
+const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+const pdf = require('pdfkit');
+const fs = require('fs');
+const multer = require('multer');
+const path = require('path');
+
+const app = express();
+const upload = multer({ dest: 'uploads/' });
+
+app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// CORS Разрешение
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    next();
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'hey@dashapixie.com',
+    pass: 'uhzb ikkg lawc ampw'
+  }
 });
 
-// Главная страница
-app.get("/", (req, res) => {
-    res.send("Сервер запущен на порту " + port);
-});
-
-// Маршрут для обработки формы
-app.post("/send-email", (req, res) => {
+app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }]), async (req, res) => {
     const { firstName, surname, address, city, state, zip, email, phone, birthday, signature } = req.body;
+    const idFront = req.files['idFront'] ? req.files['idFront'][0] : null;
+    const idBack = req.files['idBack'] ? req.files['idBack'][0] : null;
 
-    // Создание PDF
-    const doc = new PDFDocument();
-    const filePath = `./form_${Date.now()}.pdf`;
-    doc.pipe(fs.createWriteStream(filePath));
-    doc.fontSize(14).text(`First Name: ${firstName}`);
-    doc.fontSize(14).text(`Surname: ${surname}`);
-    doc.fontSize(14).text(`Address: ${address}`);
-    doc.fontSize(14).text(`City: ${city}`);
-    doc.fontSize(14).text(`State: ${state}`);
-    doc.fontSize(14).text(`Zip: ${zip}`);
-    doc.fontSize(14).text(`Email: ${email}`);
-    doc.fontSize(14).text(`Phone: ${phone}`);
-    doc.fontSize(14).text(`Birthday: ${birthday}`);
-    doc.fontSize(14).text(`Signature: ${signature}`);
+    const pdfPath = `./${firstName}_${surname}_ConsentForm.pdf`;
+    const doc = new pdf();
+    const writeStream = fs.createWriteStream(pdfPath);
+    doc.pipe(writeStream);
+
+    doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`First Name: ${firstName}`);
+    doc.text(`Surname: ${surname}`);
+    doc.text(`Address: ${address}`);
+    doc.text(`City: ${city}, State: ${state}, Zip: ${zip}`);
+    doc.text(`Email: ${email}`);
+    doc.text(`Phone: ${phone}`);
+    doc.text(`Birthday: ${birthday}`);
+
+    if (signature) {
+        const signaturePath = `./uploads/signature_${Date.now()}.png`;
+        const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+        fs.writeFileSync(signaturePath, base64Data, 'base64');
+        doc.addPage().image(signaturePath, { fit: [500, 300], align: 'center', valign: 'center' });
+        fs.unlinkSync(signaturePath); // Удаляем временный файл с подписью
+    }
+
     doc.end();
 
-    // Настройки для Nodemailer
-    const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-            user: "hey@dashapixie.com",
-            pass: "ПАРОЛЬ_ПРИЛОЖЕНИЯ"
-        }
-    });
+    writeStream.on('finish', async () => {
+        const attachments = [{ filename: `${firstName}_${surname}_ConsentForm.pdf`, path: pdfPath }];
+        
+        if (idFront) attachments.push({ filename: idFront.originalname, path: idFront.path });
+        if (idBack) attachments.push({ filename: idBack.originalname, path: idBack.path });
 
-    // Отправка письма с вложением
-    transporter.sendMail({
-        from: "hey@dashapixie.com",
-        to: "hey@dashapixie.com",
-        subject: "Заполненная форма",
-        text: "Смотри вложение.",
-        attachments: [
-            {
-                filename: `form_${Date.now()}.pdf`,
-                path: filePath
+        const mailOptions = {
+            from: 'hey@dashapixie.com',
+            to: 'hey@dashapixie.com',
+            subject: 'New Consent Form Submission',
+            text: 'Please see the attached document and ID files.',
+            attachments
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            fs.unlinkSync(pdfPath); // Удаляем PDF после отправки
+            if (idFront) fs.unlinkSync(idFront.path); // Удаляем загруженные файлы
+            if (idBack) fs.unlinkSync(idBack.path); // Удаляем загруженные файлы
+
+            if (error) {
+                console.error('Error sending email:', error);
+                return res.status(500).send('Error sending email');
             }
-        ]
-    }, (error, info) => {
-        if (error) {
-            return res.status(500).send("Ошибка при отправке письма: " + error.message);
-        }
-        fs.unlinkSync(filePath); // Удаляем PDF файл после отправки
-        res.send("Письмо успешно отправлено.");
+
+            console.log('Email sent:', info.response);
+            res.send('Email sent successfully');
+        });
     });
 });
 
-// Запуск сервера
-app.listen(port, () => {
-    console.log(`Сервер запущен на порту ${port}`);
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`Сервер запущен на порту ${PORT}`);
 });
 
