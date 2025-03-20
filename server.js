@@ -72,16 +72,35 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     doc.moveDown();
 
     // Добавление подписи клиента (если она существует)
-    if (signature) {
-        const signaturePath = `./uploads/signature_${Date.now()}.png`;
-        const base64Data = signature.replace(/^data:image\/png;base64,/, "");
-        fs.writeFileSync(signaturePath, base64Data, 'base64');
-        
-        doc.addPage();
-        doc.text('Client Signature:', { align: 'center' });
-        doc.image(signaturePath, { fit: [500, 300], align: 'center', valign: 'center' });
-        fs.unlinkSync(signaturePath); // Удаляем временный файл с подписью
-    }
+if (signature) {
+    const signaturePath = `./uploads/signature_${Date.now()}.png`;
+    const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+
+    // Сохранение изображения подписи
+    fs.writeFileSync(signaturePath, base64Data, 'base64');
+
+    // Добавление подписи в PDF
+    doc.addPage();
+    doc.fontSize(12).text('Signature:', { align: 'left' });
+
+    doc.image(signaturePath, {
+        fit: [500, 200],
+        align: 'center',
+        valign: 'center'
+    });
+
+    // Добавление текущей даты
+    const currentDate = new Date().toLocaleDateString('en-GB', { 
+        day: 'numeric', month: 'long', year: 'numeric' 
+    });
+
+    doc.moveDown();
+    doc.text(`Date: ${currentDate}`, { align: 'left' });
+
+    // Удаление временного файла подписи
+    fs.unlinkSync(signaturePath);
+}
+
 
     // Добавление текущей даты
     const currentDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
