@@ -11,10 +11,6 @@ const path = require('path');
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 
-const cors = require('cors');
-app.use(cors());
-
-
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -36,51 +32,11 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
-doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
-doc.moveDown();
+    // Добавление заголовка
+    doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
+    doc.moveDown();
 
-const staticText = `
-Please INITIAL in the boxes provided after reading to show that you understand each provision. 
-Feel free to ask any questions regarding this form.
-
-I am not a hemophiliac (bleeder). I do not have Diabetes, Epilepsy, Hepatitis, AIDS or any other communicable disease. 
-I am not under the influence of alcohol and or drugs.
-
-I acknowledge it is not reasonably possible for Dasha Pixie to determine whether I might have an allergic reaction to the pigments or process used in my Tattoo, 
-and I agree to accept the risk that such a reaction is possible.
-
-I acknowledge that infection is always possible as a result of obtaining a Tattoo, particularly in the event that I do not take proper care of my Tattoo, 
-and I agree to follow all instructions concerning the care of my own Tattoo while it is healing. I agree that any touch-up work needed due to my own negligence 
-will be done at my own expense.
-
-I realize that variations in color and design may exist between any tattoo as selected by Me and as ultimately applied to my body. 
-I understand that if my skin color is dark the colors will not appear as bright as they do on light skin.
-
-I acknowledge a Tattoo is a permanent change to my appearance and no representations have been made to me to the ability to later change or remove my tattoo. 
-To my knowledge, I do not have any physical, mental, medical impairment or disability, which might affect my well-being as a direct or indirect result of my decision 
-to have any tattoo-related work done at this time.
-
-I acknowledge that I have truthfully represented to Dasha Pixie that I am 18 years old, and the following information is true and correct.
-
-I acknowledge obtaining of my tattoo is by my choice alone and I consent to the application of the tattoo and to any action or conduct of Dasha Pixie 
-reasonably necessary to perform the tattoo procedure.
-
-I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages and legal actions arising from or connected in any way 
-with my tattoo of the procedures and conduct used to apply my Tattoo.
-`;
-
-doc.fontSize(12).text(staticText);
-doc.moveDown();
-
-// Вставка подписи, если она существует
-if (signature) {
-    const signaturePath = `./uploads/signature_${Date.now()}.png`;
-    const base64Data = signature.replace(/^data:image\/png;base64,/, "");
-    fs.writeFileSync(signaturePath, base64Data, 'base64');
-    doc.addPage().image(signaturePath, { fit: [500, 300], align: 'center', valign: 'center' });
-    fs.unlinkSync(signaturePath); // Удаляем временный файл с подписью
-}
-
+    // Добавление информации, введенной клиентом
     doc.fontSize(12).text(`First Name: ${firstName}`);
     doc.text(`Surname: ${surname}`);
     doc.text(`Address: ${address}`);
@@ -88,14 +44,49 @@ if (signature) {
     doc.text(`Email: ${email}`);
     doc.text(`Phone: ${phone}`);
     doc.text(`Birthday: ${birthday}`);
+    doc.moveDown();
 
+    // Добавление неизменного текста после заполненной информации
+    doc.text(`
+      I am not a hemophiliac (bleeder). I do not have Diabetes, Epilepsy, Hepatitis, Aids or any other communicable disease. 
+      I am not under the influence of alcohol and or drugs.
+      
+      I acknowledge it is not reasonably possible for Dasha Pixie to determine whether I might have an allergic reaction to the pigments or process used in my Tattoo,
+      and I agree to accept the risk that such a reaction is possible.
+
+      I acknowledge that infection is always possible as a result of obtaining a Tattoo, particularly in the event that I do not take proper care of my Tattoo, 
+      and I agree to follow all instructions concerning the care of my own Tattoo while it is healing. 
+      I agree That any touch-up work needed due to my own negligence will be done at my own expense.
+
+      I realize that variations in color and design may exist between any tattoo as selected by Me and as ultimately applied to my body. 
+      I understand that if my skin color is dark, the Colors will not appear as bright as they do on light skin.
+
+      I acknowledge a Tattoo is a permanent change to my appearance and no representations have been made to me regarding the ability to later change or remove my tattoo. 
+      To my knowledge, I do not have any physical, mental, medical impairment or disability, which might affect my well-being as a direct or indirect result of my decision to have any tattoo-related work done at this time.
+
+      I acknowledge that I have truthfully represented to Dasha Pixie that I am 18 years old, and the following information is true and correct.
+      I acknowledge obtaining of my tattoo is by my choice alone and I consent to the application of the tattoo and to any action or conduct of Dasha Pixie reasonably necessary to perform the tattoo procedure.
+
+      I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages, and legal actions arising from or connected in any way with my tattoo of the procedures and conduct used to apply my Tattoo.
+    `);
+    doc.moveDown();
+
+    // Добавление подписи клиента (если она существует)
     if (signature) {
         const signaturePath = `./uploads/signature_${Date.now()}.png`;
         const base64Data = signature.replace(/^data:image\/png;base64,/, "");
         fs.writeFileSync(signaturePath, base64Data, 'base64');
-        doc.addPage().image(signaturePath, { fit: [500, 300], align: 'center', valign: 'center' });
+        
+        doc.addPage();
+        doc.text('Client Signature:', { align: 'center' });
+        doc.image(signaturePath, { fit: [500, 300], align: 'center', valign: 'center' });
         fs.unlinkSync(signaturePath); // Удаляем временный файл с подписью
     }
+
+    // Добавление текущей даты
+    const currentDate = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    doc.moveDown();
+    doc.text(`Date of Submission: ${currentDate}`, { align: 'right' });
 
     doc.end();
 
@@ -114,9 +105,9 @@ if (signature) {
         };
 
         transporter.sendMail(mailOptions, (error, info) => {
-            fs.unlinkSync(pdfPath); // Удаляем PDF после отправки
-            if (idFront) fs.unlinkSync(idFront.path); // Удаляем загруженные файлы
-            if (idBack) fs.unlinkSync(idBack.path); // Удаляем загруженные файлы
+            fs.unlinkSync(pdfPath);
+            if (idFront) fs.unlinkSync(idFront.path);
+            if (idBack) fs.unlinkSync(idBack.path);
 
             if (error) {
                 console.error('Error sending email:', error);
