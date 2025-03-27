@@ -90,6 +90,17 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
             console.error('❌ Error adding signature to PDF:', error);
         }
     }
+// Добавление текста о согласии в PDF
+doc.moveDown();
+doc.text(`
+I confirm that the signature provided is my own, created by me personally and electronically. 
+I acknowledge that this electronic signature is legally binding in accordance with the U.S. Electronic Signatures in Global and National Commerce Act (E-Sign Act) 
+and Uniform Electronic Transactions Act (UETA). By clicking/tapping/touching/selecting or otherwise interacting with the "Submit" button below, 
+you are consenting to signing this Document electronically. You agree your electronic signature ("E-Signature") is the legal equivalent of your manual signature 
+on this Document. You consent to be legally bound by this Document's agreement(s), acknowledgement(s), policy(ies), disclosure(s), consent term(s) and condition(s). 
+You agree that no certification authority or other third party verification is necessary to validate your E-Signature and that the lack of such certification 
+or third party verification will not in any way affect the enforceability of your E-Signature. You may request a paper version of an electronic record by writing to us.
+`, { align: 'justify' });
 
     doc.end();
 
