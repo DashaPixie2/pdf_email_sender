@@ -76,11 +76,14 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
             const signaturePath = `./uploads/signature_${Date.now()}.png`;
             const base64Data = signature.replace(/^data:image\/png;base64,/, "");
 
-            fs.writeFileSync(signaturePath, base64Data, 'base64');
+            fs.writeFileSync(signaturePath, base64Data, { encoding: 'base64' });
 
-            // Добавляем файл подписи в письмо
-            signatureAttachment = { filename: `Signature_${firstName}_${surname}.png`, path: signaturePath };
-
+            if (fs.existsSync(signaturePath)) {
+                console.log(`Signature file successfully saved: ${signaturePath}`);
+                signatureAttachment = { filename: `Signature_${firstName}_${surname}.png`, path: signaturePath };
+            } else {
+                console.error('Error: Signature file was not created.');
+            }
         } catch (error) {
             console.error('Error processing signature:', error);
         }
