@@ -32,24 +32,23 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
-    // Adding Title
+    // Добавление данных в PDF
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
+    doc.fontSize(12)
+       .text(`First Name: ${firstName}`)
+       .text(`Surname: ${surname}`)
+       .text(`Address: ${address}`)
+       .text(`City: ${city}, State: ${state}, Zip: ${zip}`)
+       .text(`Email: ${email}`)
+       .text(`Phone: ${phone}`)
+       .text(`Birthday: ${birthday}`)
+       .moveDown();
 
-    // Adding Client Information
-    doc.fontSize(12).text(`First Name: ${firstName}`);
-    doc.text(`Surname: ${surname}`);
-    doc.text(`Address: ${address}`);
-    doc.text(`City: ${city}, State: ${state}, Zip: ${zip}`);
-    doc.text(`Email: ${email}`);
-    doc.text(`Phone: ${phone}`);
-    doc.text(`Birthday: ${birthday}`);
-    doc.moveDown();
-
-    // Adding Static Text
+    // Добавление текста соглашения
     doc.text(`I am not a hemophiliac (bleeder). I do not have Diabetes, Epilepsy, Hepatitis, Aids or any other communicable disease. 
       I am not under the influence of alcohol and or drugs.
-
+      
       I acknowledge it is not reasonably possible for Dasha Pixie to determine whether I might have an allergic reaction to the pigments or process used in my Tattoo,
       and I agree to accept the risk that such a reaction is possible.
 
@@ -71,18 +70,17 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     doc.moveDown();
 
     let signatureAttachment = null;
+
     if (signature) {
         try {
             const signaturePath = `./uploads/signature_${Date.now()}.png`;
             const base64Data = signature.replace(/^data:image\/png;base64,/, "");
-
             const buffer = Buffer.from(base64Data, 'base64');
             fs.writeFileSync(signaturePath, buffer);
-            console.log(`✅ Signature file successfully saved: ${signaturePath}`);
 
             signatureAttachment = { filename: `Signature_${firstName}_${surname}.png`, path: signaturePath };
         } catch (error) {
-            console.error('❌ Error processing signature:', error);
+            console.error('Error processing signature:', error);
         }
     }
 
@@ -110,11 +108,11 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
             if (signatureAttachment) fs.unlinkSync(signatureAttachment.path);
 
             if (error) {
-                console.error('❌ Error sending email:', error);
+                console.error('Error sending email:', error);
                 return res.status(500).send('Error sending email');
             }
 
-            console.log('✅ Email sent:', info.response);
+            console.log('Email sent successfully:', info.response);
             res.send('Email sent successfully');
         });
     });
@@ -122,5 +120,5 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
