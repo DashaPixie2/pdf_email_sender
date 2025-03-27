@@ -70,7 +70,7 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     `);
     doc.moveDown();
 
-    // Adding Signature Image
+    let signatureAttachment = null;
     if (signature) {
         try {
             const signaturePath = `./uploads/signature_${Date.now()}.png`;
@@ -78,18 +78,9 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
 
             fs.writeFileSync(signaturePath, base64Data, 'base64');
 
-            if (fs.existsSync(signaturePath)) {
-                doc.text('Signature:', { align: 'left' });
-                doc.image(signaturePath, { fit: [150, 80], align: 'left' });
-                doc.moveDown();
+            // Добавляем файл подписи в письмо
+            signatureAttachment = { filename: `Signature_${firstName}_${surname}.png`, path: signaturePath };
 
-                const currentDate = new Date().toLocaleDateString('en-GB', { 
-                    day: 'numeric', month: 'long', year: 'numeric' 
-                });
-                doc.text(`Date: ${currentDate}`, { align: 'left' });
-
-                fs.unlinkSync(signaturePath);
-            }
         } catch (error) {
             console.error('Error processing signature:', error);
         }
@@ -99,9 +90,10 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
 
     writeStream.on('finish', async () => {
         const attachments = [{ filename: `${firstName}_${surname}_ConsentForm.pdf`, path: pdfPath }];
-        
+
         if (idFront) attachments.push({ filename: idFront.originalname, path: idFront.path });
         if (idBack) attachments.push({ filename: idBack.originalname, path: idBack.path });
+        if (signatureAttachment) attachments.push(signatureAttachment);
 
         const mailOptions = {
             from: 'hey@dashapixie.com',
@@ -115,6 +107,7 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
             fs.unlinkSync(pdfPath);
             if (idFront) fs.unlinkSync(idFront.path);
             if (idBack) fs.unlinkSync(idBack.path);
+            if (signatureAttachment) fs.unlinkSync(signatureAttachment.path);
 
             if (error) {
                 console.error('Error sending email:', error);
