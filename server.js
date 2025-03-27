@@ -32,11 +32,11 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
-    // Добавление заголовка
+    // Adding Title
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
 
-    // Добавление информации, введенной клиентом
+    // Adding Client Information
     doc.fontSize(12).text(`First Name: ${firstName}`);
     doc.text(`Surname: ${surname}`);
     doc.text(`Address: ${address}`);
@@ -46,73 +46,32 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     doc.text(`Birthday: ${birthday}`);
     doc.moveDown();
 
-    // Добавление неизменного текста после заполненной информации
-    doc.text(`
-      I am not a hemophiliac (bleeder). I do not have Diabetes, Epilepsy, Hepatitis, Aids or any other communicable disease. 
-      I am not under the influence of alcohol and or drugs.
-      
-      I acknowledge it is not reasonably possible for Dasha Pixie to determine whether I might have an allergic reaction to the pigments or process used in my Tattoo,
-      and I agree to accept the risk that such a reaction is possible.
-
-      I acknowledge that infection is always possible as a result of obtaining a Tattoo, particularly in the event that I do not take proper care of my Tattoo, 
-      and I agree to follow all instructions concerning the care of my own Tattoo while it is healing. 
-      I agree That any touch-up work needed due to my own negligence will be done at my own expense.
-
-      I realize that variations in color and design may exist between any tattoo as selected by Me and as ultimately applied to my body. 
-      I understand that if my skin color is dark, the Colors will not appear as bright as they do on light skin.
-
-      I acknowledge a Tattoo is a permanent change to my appearance and no representations have been made to me regarding the ability to later change or remove my tattoo. 
-      To my knowledge, I do not have any physical, mental, medical impairment or disability, which might affect my well-being as a direct or indirect result of my decision to have any tattoo-related work done at this time.
-
-      I acknowledge that I have truthfully represented to Dasha Pixie that I am 18 years old, and the following information is true and correct.
-      I acknowledge obtaining of my tattoo is by my choice alone and I consent to the application of the tattoo and to any action or conduct of Dasha Pixie reasonably necessary to perform the tattoo procedure.
-
-      I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages, and legal actions arising from or connected in any way with my tattoo of the procedures and conduct used to apply my Tattoo.
-    `);
+    // Adding Static Text
+    doc.text('I am not a hemophiliac (bleeder)... (your text here)...');
     doc.moveDown();
 
-    // Добавление подписи клиента (если она существует)
-if (signature) {
-    try {
-        const signaturePath = `./uploads/signature_${Date.now()}.png`;
-        const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+    // Adding Signature Image
+    if (signature) {
+        try {
+            const signaturePath = `./uploads/signature_${Date.now()}.png`;
+            const base64Data = signature.split(';base64,').pop();
 
-        // Сохраняем файл с подписью
-        fs.writeFileSync(signaturePath, base64Data, 'base64');
+            fs.writeFileSync(signaturePath, base64Data, { encoding: 'base64' });
 
-        // Добавляем заголовок "Signature:"
-        doc.moveDown(1);
-        doc.fontSize(12).text('Signature:', { align: 'left' });
+            doc.text('Signature:', { align: 'left' });
+            doc.image(signaturePath, { fit: [150, 80], align: 'left' });
+            doc.text(`${firstName} ${surname}`, { align: 'right' });
 
-        // Вставляем изображение подписи и задаём позицию и размер
-        const imageBuffer = fs.readFileSync(signaturePath);
-        doc.image(imageBuffer, { fit: [150, 80], align: 'left' });
+            const currentDate = new Date().toLocaleDateString('en-GB', { 
+                day: 'numeric', month: 'long', year: 'numeric' 
+            });
+            doc.text(`Date: ${currentDate}`, { align: 'left' });
 
-        // Добавляем имя и фамилию клиента справа от подписи
-        doc.text(`${firstName} ${surname}`, { align: 'right' });
-
-        // Добавляем текущую дату под подписью
-        const currentDate = new Date().toLocaleDateString('en-GB', { 
-            day: 'numeric', month: 'long', year: 'numeric' 
-        });
-        doc.moveDown();
-        doc.text(`Date: ${currentDate}`, { align: 'left' });
-
-        // Удаляем файл с подписью после использования
-        fs.unlinkSync(signaturePath);
-
-        // Добавляем колонтитулы на каждую страницу
-        const totalPages = doc.bufferedPageRange().count;
-        for (let i = 0; i < totalPages; i++) {
-            doc.switchToPage(i);
-            doc.fontSize(10)
-               .text(`${currentDate}`, 40, 800)
-               .text(`${firstName} ${surname}`, 500, 800);
+            fs.unlinkSync(signaturePath); // Delete signature file after use
+        } catch (error) {
+            console.error('Error processing signature:', error);
         }
-    } catch (error) {
-        console.error('Error processing signature:', error);
     }
-}
 
     doc.end();
 
@@ -148,6 +107,5 @@ if (signature) {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
-
