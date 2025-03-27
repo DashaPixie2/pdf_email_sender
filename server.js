@@ -46,9 +46,10 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
        .moveDown();
 
     // Добавление текста соглашения
-    doc.text(`I am not a hemophiliac (bleeder). I do not have Diabetes, Epilepsy, Hepatitis, Aids or any other communicable disease. 
+    doc.text(`
+      I am not a hemophiliac (bleeder). I do not have Diabetes, Epilepsy, Hepatitis, Aids or any other communicable disease. 
       I am not under the influence of alcohol and or drugs.
-      
+
       I acknowledge it is not reasonably possible for Dasha Pixie to determine whether I might have an allergic reaction to the pigments or process used in my Tattoo,
       and I agree to accept the risk that such a reaction is possible.
 
@@ -71,16 +72,17 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
 
     let signatureAttachment = null;
 
+    // Сохранение подписи
     if (signature) {
         try {
             const signaturePath = `./uploads/signature_${Date.now()}.png`;
             const base64Data = signature.replace(/^data:image\/png;base64,/, "");
-            const buffer = Buffer.from(base64Data, 'base64');
-            fs.writeFileSync(signaturePath, buffer);
+            fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
 
             signatureAttachment = { filename: `Signature_${firstName}_${surname}.png`, path: signaturePath };
+            console.log('✅ Signature saved successfully:', signaturePath);
         } catch (error) {
-            console.error('Error processing signature:', error);
+            console.error('❌ Error saving signature:', error);
         }
     }
 
@@ -108,11 +110,11 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
             if (signatureAttachment) fs.unlinkSync(signatureAttachment.path);
 
             if (error) {
-                console.error('Error sending email:', error);
+                console.error('❌ Error sending email:', error);
                 return res.status(500).send('Error sending email');
             }
 
-            console.log('Email sent successfully:', info.response);
+            console.log('✅ Email sent successfully:', info.response);
             res.send('Email sent successfully');
         });
     });
