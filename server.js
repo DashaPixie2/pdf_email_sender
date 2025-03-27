@@ -1,5 +1,3 @@
-// server.js
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
@@ -7,19 +5,27 @@ const pdf = require('pdfkit');
 const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
+const cors = require('cors');  // Импортируем библиотеку cors
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
+
+// Настраиваем CORS, чтобы запросы принимались только с твоего сайта
+app.use(cors({
+    origin: 'https://dashapixie.com',
+    methods: ['POST'],
+    allowedHeaders: ['Content-Type']
+}));
 
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'hey@dashapixie.com',
-    pass: 'uhzb ikkg lawc ampw'
-  }
+    service: 'gmail',
+    auth: {
+        user: 'hey@dashapixie.com',
+        pass: 'uhzb ikkg lawc ampw'
+    }
 });
 
 app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }]), async (req, res) => {
@@ -74,11 +80,7 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
             const base64Data = signature.replace(/^data:image\/png;base64,/, "");
             fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
 
-            // Вставляем изображение подписи в PDF
-            doc.image(signaturePath, {
-                fit: [150, 80], // Размер изображения в PDF
-                align: 'center'
-            });
+            doc.image(signaturePath, { fit: [150, 80], align: 'center' });
             
             fs.unlinkSync(signaturePath); // Удаляем временный файл после добавления
             console.log('✅ Signature added to PDF successfully.');
@@ -123,3 +125,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
