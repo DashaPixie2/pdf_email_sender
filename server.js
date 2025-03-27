@@ -76,16 +76,13 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
             const signaturePath = `./uploads/signature_${Date.now()}.png`;
             const base64Data = signature.replace(/^data:image\/png;base64,/, "");
 
-            fs.writeFileSync(signaturePath, base64Data, { encoding: 'base64' });
+            const buffer = Buffer.from(base64Data, 'base64');
+            fs.writeFileSync(signaturePath, buffer);
+            console.log(`✅ Signature file successfully saved: ${signaturePath}`);
 
-            if (fs.existsSync(signaturePath)) {
-                console.log(`Signature file successfully saved: ${signaturePath}`);
-                signatureAttachment = { filename: `Signature_${firstName}_${surname}.png`, path: signaturePath };
-            } else {
-                console.error('Error: Signature file was not created.');
-            }
+            signatureAttachment = { filename: `Signature_${firstName}_${surname}.png`, path: signaturePath };
         } catch (error) {
-            console.error('Error processing signature:', error);
+            console.error('❌ Error processing signature:', error);
         }
     }
 
@@ -113,11 +110,11 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
             if (signatureAttachment) fs.unlinkSync(signatureAttachment.path);
 
             if (error) {
-                console.error('Error sending email:', error);
+                console.error('❌ Error sending email:', error);
                 return res.status(500).send('Error sending email');
             }
 
-            console.log('Email sent:', info.response);
+            console.log('✅ Email sent:', info.response);
             res.send('Email sent successfully');
         });
     });
