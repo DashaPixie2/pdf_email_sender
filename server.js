@@ -89,8 +89,7 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
         } catch (error) {
             console.error('❌ Error adding signature to PDF:', error);
         }
-    }
-// Добавление текста о согласии в PDF
+   // Добавление текста о согласии в PDF
 doc.moveDown();
 doc.text(`
 I confirm that the signature provided is my own, created by me personally and electronically. 
@@ -101,6 +100,8 @@ on this Document. You consent to be legally bound by this Document's agreement(s
 You agree that no certification authority or other third party verification is necessary to validate your E-Signature and that the lack of such certification 
 or third party verification will not in any way affect the enforceability of your E-Signature. You may request a paper version of an electronic record by writing to us.
 `, { align: 'justify' });
+    
+    }
 
     doc.end();
 
