@@ -86,8 +86,8 @@ I agree to release and forever discharge and hold harmless Dasha Pixie from any 
            
             const currentDate = new Date().toLocaleDateString('en-US');
 doc.moveDown(0.5);
-doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'center' });
-doc.text(`Date: ${currentDate}`, { align: 'center' });
+doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
+doc.text(`Date: ${currentDate}`, { align: 'left' });
 
             fs.unlinkSync(signaturePath); // Удаляем временный файл после добавления
             console.log('✅ Signature added to PDF successfully.');
@@ -105,6 +105,27 @@ on this Document. You consent to be legally bound by this Document's agreement(s
 You agree that no certification authority or other third party verification is necessary to validate your E-Signature and that the lack of such certification 
 or third party verification will not in any way affect the enforceability of your E-Signature. You may request a paper version of an electronic record by writing to us.
 `, { align: 'justify' });
+
+        if (signature) {
+        try {
+            const signaturePath = `./uploads/signature_${Date.now()}.png`;
+            const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+            fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
+
+            doc.image(signaturePath, { fit: [150, 80], align: 'center' });
+           
+            const currentDate = new Date().toLocaleDateString('en-US');
+doc.moveDown(0.5);
+doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
+doc.text(`Date: ${currentDate}`, { align: 'left' });
+
+            fs.unlinkSync(signaturePath); // Удаляем временный файл после добавления
+            console.log('✅ Signature added to PDF successfully.');
+        } catch (error) {
+            console.error('❌ Error adding signature to PDF:', error);
+        }
+
+        doc.moveDown();
     }
 
     doc.end();
