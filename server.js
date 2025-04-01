@@ -138,7 +138,7 @@ or third party verification will not in any way affect the enforceability of you
         // Рисуем текст по левому краю и вертикально по центру
         doc.text(text, 20, textY, {
             lineBreak: false,
-            align: 'left'
+            align: 'right'
         });
 
         doc.restore();
