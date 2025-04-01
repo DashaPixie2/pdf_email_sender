@@ -38,7 +38,7 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
-    // === Тело документа ===
+    // === Основной текст ===
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12)
@@ -111,7 +111,7 @@ or third party verification will not in any way affect the enforceability of you
         }
     }
 
-    // === Колонтитул-блок с нумерацией ===
+    // === Колонтитул: блок + нумерация ===
     const pageRange = doc.bufferedPageRange();
     const totalPages = pageRange.count;
 
@@ -120,22 +120,26 @@ or third party verification will not in any way affect the enforceability of you
 
         const footerHeight = 30;
         const footerY = doc.page.height - footerHeight;
+        const text = `Page ${i + 1} of ${totalPages}`;
 
         doc.save();
 
-        // Прямоугольный блок (фон)
+        // Рисуем блок колонтитула
         doc.fillColor('#f4f4f4')
-           .rect(0, footerY, doc.page.width, footerHeight)
-           .fill();
+            .rect(0, footerY, doc.page.width, footerHeight)
+            .fill();
 
-        // Текст нумерации внутри блока
+        // Настраиваем шрифт
         doc.fillColor('gray')
-           .fontSize(10)
-           .text(`Page ${i + 1} of ${totalPages}`, 0, footerY + 8, {
-               width: doc.page.width,
-               align: 'center',
-               lineBreak: false
-           });
+            .fontSize(10);
+        const textHeight = doc.currentLineHeight();
+        const textY = footerY + (footerHeight - textHeight) / 2;
+
+        // Рисуем текст по левому краю и вертикально по центру
+        doc.text(text, 20, textY, {
+            lineBreak: false,
+            align: 'left'
+        });
 
         doc.restore();
     }
