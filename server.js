@@ -83,6 +83,11 @@ I agree to release and forever discharge and hold harmless Dasha Pixie from any 
             fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
 
             doc.image(signaturePath, { fit: [150, 80], align: 'center' });
+           
+            const currentDate = new Date().toLocaleDateString('en-US');
+doc.moveDown(0.5);
+doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'center' });
+doc.text(`Date: ${currentDate}`, { align: 'center' });
 
             fs.unlinkSync(signaturePath); // Удаляем временный файл после добавления
             console.log('✅ Signature added to PDF successfully.');
