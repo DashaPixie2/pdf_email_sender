@@ -38,7 +38,6 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
-    // Содержимое формы
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12)
@@ -73,6 +72,7 @@ I acknowledge obtaining of my tattoo is by my choice alone and I consent to the 
 
 I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages, and legal actions arising from or connected in any way with my tattoo of the procedures and conduct used to apply my Tattoo.
 `);
+
     doc.moveDown();
 
     if (signature) {
@@ -111,32 +111,30 @@ or third party verification will not in any way affect the enforceability of you
         }
     }
 
-    // === Колонтитул с нумерацией ===
+    // === Колонтитул-бокс с нумерацией ===
     const pageRange = doc.bufferedPageRange();
     const totalPages = pageRange.count;
 
     for (let i = 0; i < totalPages; i++) {
         doc.switchToPage(i);
 
-        const footerTop = doc.page.height - 40;
+        const footerHeight = 30;
+        const footerY = doc.page.height - footerHeight;
 
         doc.save();
 
-        // Линия
-        doc.moveTo(50, footerTop)
-           .lineTo(doc.page.width - 50, footerTop)
-           .strokeColor('lightgray')
-           .lineWidth(0.5)
-           .stroke();
+        // Рисуем прямоугольник
+        doc.rect(0, footerY, doc.page.width, footerHeight)
+            .fill('#f4f4f4');
 
-        // Нумерация
-        doc.fontSize(10)
-           .fillColor('gray')
-           .text(`Page ${i + 1} of ${totalPages}`, 50, footerTop + 5, {
-               width: doc.page.width - 100,
-               align: 'center',
-               lineBreak: false
-           });
+        // Текст внутри бокса
+        doc.fillColor('gray')
+            .fontSize(10)
+            .text(`Page ${i + 1} of ${totalPages}`, 0, footerY + 10, {
+                width: doc.page.width,
+                align: 'center',
+                lineBreak: false
+            });
 
         doc.restore();
     }
