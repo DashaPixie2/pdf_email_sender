@@ -33,47 +33,28 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const idFront = req.files['idFront'] ? req.files['idFront'][0] : null;
     const idBack = req.files['idBack'] ? req.files['idBack'][0] : null;
 
-    const initials = `${firstName[0] || ''}${surname[0] || ''}`.toUpperCase();
-    const today = new Date().toLocaleDateString('en-US');
-
     const pdfPath = `./${firstName}_${surname}_ConsentForm.pdf`;
     const doc = new pdf({ autoFirstPage: false });
-    const writeStream = fs.createWriteStream(pdfPath);
-    doc.pipe(writeStream);
 
+    // Создаем первую страницу
     doc.addPage();
+    const initials = `${firstName[0].toUpperCase()}.${surname[0].toUpperCase()}.`;
+    const today = new Date().toLocaleDateString();
 
-    const footer = (doc, pageNum, totalPages) => {
-        doc.fontSize(10)
-           .fillColor('gray')
-           .text(`${initials} | Signed`, 50, doc.page.height - 40, { align: 'left' });
-        doc.text(`${pageNum}/${totalPages}`, 0, doc.page.height - 40, { align: 'right' });
-    };
-
-    const addSignatureBlock = (doc, imagePath) => {
-        doc.moveDown();
-        doc.text(`Name: ${firstName} ${surname}`);
-        doc.text(`Date: ${today}`);
-        doc.moveDown();
-        doc.image(imagePath, { fit: [150, 80], align: 'center' });
-        doc.addPage();
-    };
-
-    doc.fontSize(20).fillColor('black').text('Consent to Application of Tattoo and Release and Waiver of all Claims', {
-        align: 'center'
-    });
+    doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
+    doc.fontSize(12)
+       .text(`First Name: ${firstName}`)
+       .text(`Surname: ${surname}`)
+       .text(`Address: ${address}`)
+       .text(`City: ${city}, State: ${state}, Zip: ${zip}`)
+       .text(`Email: ${email}`)
+       .text(`Phone: ${phone}`)
+       .text(`Birthday: ${birthday}`)
+       .moveDown();
 
-    doc.fontSize(12).text(`First Name: ${firstName}`)
-                    .text(`Surname: ${surname}`)
-                    .text(`Address: ${address}`)
-                    .text(`City: ${city}, State: ${state}, Zip: ${zip}`)
-                    .text(`Email: ${email}`)
-                    .text(`Phone: ${phone}`)
-                    .text(`Birthday: ${birthday}`)
-                    .moveDown();
-
-    doc.text(`I am not a hemophiliac (bleeder). I do not have Diabetes, Epilepsy, Hepatitis, Aids or any other communicable disease. 
+    doc.text(`
+      I am not a hemophiliac (bleeder). I do not have Diabetes, Epilepsy, Hepatitis, Aids or any other communicable disease. 
       I am not under the influence of alcohol and or drugs.
 
       I acknowledge it is not reasonably possible for Dasha Pixie to determine whether I might have an allergic reaction to the pigments or process used in my Tattoo,
@@ -92,42 +73,62 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
       I acknowledge that I have truthfully represented to Dasha Pixie that I am 18 years old, and the following information is true and correct.
       I acknowledge obtaining of my tattoo is by my choice alone and I consent to the application of the tattoo and to any action or conduct of Dasha Pixie reasonably necessary to perform the tattoo procedure.
 
-      I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages, and legal actions arising from or connected in any way with my tattoo of the procedures and conduct used to apply my Tattoo.`).moveDown(); // here insert full legal text
+      I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages, and legal actions arising from or connected in any way with my tattoo of the procedures and conduct used to apply my Tattoo.
+    `);
 
     if (signature) {
-        try {
-            const signaturePath = `./uploads/signature_${Date.now()}.png`;
-            const base64Data = signature.replace(/^data:image\/png;base64,/, "");
-            fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
+        const signaturePath = `./uploads/signature_${Date.now()}.png`;
+        const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+        fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
 
-            addSignatureBlock(doc, signaturePath);
+        doc.moveDown();
+        doc.text(`Signed by: ${firstName} ${surname} on ${today}`);
+        doc.image(signaturePath, { fit: [150, 80], align: 'center' });
+        fs.unlinkSync(signaturePath);
+    }
 
-            doc.text(`I confirm that the signature provided is my own, created by me personally and electronically. 
+    // Вторая страница с согласием на e-signature
+    doc.addPage();
+    doc.fontSize(12);
+    doc.text(`
+I confirm that the signature provided is my own, created by me personally and electronically. 
 I acknowledge that this electronic signature is legally binding in accordance with the U.S. Electronic Signatures in Global and National Commerce Act (E-Sign Act) 
 and Uniform Electronic Transactions Act (UETA). By clicking/tapping/touching/selecting or otherwise interacting with the "Submit" button below, 
 you are consenting to signing this Document electronically. You agree your electronic signature ("E-Signature") is the legal equivalent of your manual signature 
 on this Document. You consent to be legally bound by this Document's agreement(s), acknowledgement(s), policy(ies), disclosure(s), consent term(s) and condition(s). 
 You agree that no certification authority or other third party verification is necessary to validate your E-Signature and that the lack of such certification 
-or third party verification will not in any way affect the enforceability of your E-Signature. You may request a paper version of an electronic record by writing to us.`).moveDown(); // Insert full confirmation legal text
-            addSignatureBlock(doc, signaturePath);
+or third party verification will not in any way affect the enforceability of your E-Signature. You may request a paper version of an electronic record by writing to us.
+`);
 
-            fs.unlinkSync(signaturePath);
-        } catch (error) {
-            console.error('Error adding signature to PDF:', error);
-        }
+    if (signature) {
+        const signaturePath = `./uploads/signature_${Date.now()}_second.png`;
+        const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+        fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
+
+        doc.moveDown();
+        doc.text(`Signed again by: ${firstName} ${surname} on ${today}`);
+        doc.image(signaturePath, { fit: [150, 80], align: 'center' });
+        fs.unlinkSync(signaturePath);
+    }
+
+    // Добавляем нумерацию и колонтитулы на каждой странице
+    const pageCount = doc.bufferedPageRange().count;
+    for (let i = 0; i < pageCount; i++) {
+        doc.switchToPage(i);
+        doc.fontSize(10)
+           .fillColor('gray')
+           .text(`${initials} - Signed`, 50, doc.page.height - 40, { align: 'left' })
+           .text(`Page ${i + 1} / ${pageCount}`, 0, doc.page.height - 40, { align: 'right' });
     }
 
     doc.end();
 
-    writeStream.on('finish', async () => {
-        const pages = doc.bufferedPageRange().count;
-        const readDoc = new pdf();
-        for (let i = 0; i < pages; i++) {
-            readDoc.switchToPage(i);
-            footer(readDoc, i + 1, pages);
-        }
+    const writeStream = fs.createWriteStream(pdfPath);
+    doc.pipe(writeStream);
 
+    writeStream.on('finish', async () => {
         const attachments = [{ filename: `${firstName}_${surname}_ConsentForm.pdf`, path: pdfPath }];
+
         if (idFront) attachments.push({ filename: idFront.originalname, path: idFront.path });
         if (idBack) attachments.push({ filename: idBack.originalname, path: idBack.path });
 
@@ -150,12 +151,4 @@ or third party verification will not in any way affect the enforceability of you
             }
 
             console.log('✅ Email sent successfully:', info.response);
-            res.send('Email sent successfully');
-        });
-    });
-});
-
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+            res.send('E
