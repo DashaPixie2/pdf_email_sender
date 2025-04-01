@@ -38,7 +38,7 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
-    // Содержимое PDF
+    // === Тело документа ===
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12)
@@ -111,35 +111,33 @@ or third party verification will not in any way affect the enforceability of you
         }
     }
 
-    // === Колонтитул в виде отдельного бокса ===
+    // === Колонтитул-блок с нумерацией ===
     const pageRange = doc.bufferedPageRange();
-const totalPages = pageRange.count;
+    const totalPages = pageRange.count;
 
-for (let i = 0; i < totalPages; i++) {
-    doc.switchToPage(i);
+    for (let i = 0; i < totalPages; i++) {
+        doc.switchToPage(i);
 
-    const footerY = doc.page.height - 30; // Колонтитул за 30 пикселей от низа
+        const footerHeight = 30;
+        const footerY = doc.page.height - footerHeight;
 
-    doc.save();
+        doc.save();
 
-    // Рисуем блок колонтитула
-    doc.fillColor('#f4f4f4')
-       .rect(0, footerY, doc.page.width, 30)
-       .fill();
+        // Прямоугольный блок (фон)
+        doc.fillColor('#f4f4f4')
+           .rect(0, footerY, doc.page.width, footerHeight)
+           .fill();
 
-    // Нумерация по центру внутри блока
-    doc.fillColor('gray')
-       .fontSize(10)
-       .text(`Page ${i + 1} of ${totalPages}`, 0, footerY + 8, {
-           width: doc.page.width,
-           align: 'center',
-           lineBreak: false,
-           baseline: 'middle'
-       });
+        // Текст нумерации внутри блока
+        doc.fillColor('gray')
+           .fontSize(10)
+           .text(`Page ${i + 1} of ${totalPages}`, 0, footerY + 8, {
+               width: doc.page.width,
+               align: 'center',
+               lineBreak: false
+           });
 
-    doc.restore();
-}
-
+        doc.restore();
     }
 
     doc.end();
