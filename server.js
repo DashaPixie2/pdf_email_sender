@@ -38,6 +38,7 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
+    // Содержимое PDF
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12)
@@ -72,7 +73,6 @@ I acknowledge obtaining of my tattoo is by my choice alone and I consent to the 
 
 I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages, and legal actions arising from or connected in any way with my tattoo of the procedures and conduct used to apply my Tattoo.
 `);
-
     doc.moveDown();
 
     if (signature) {
@@ -111,26 +111,26 @@ or third party verification will not in any way affect the enforceability of you
         }
     }
 
-    // === Колонтитул-бокс с нумерацией ===
+    // === Колонтитул в виде отдельного бокса ===
     const pageRange = doc.bufferedPageRange();
     const totalPages = pageRange.count;
 
     for (let i = 0; i < totalPages; i++) {
         doc.switchToPage(i);
 
-        const footerHeight = 30;
-        const footerY = doc.page.height - footerHeight;
+        const footerHeight = 30; // Высота колонтитула
+        const footerY = doc.page.height - footerHeight; // Смотрим, где будет размещаться нижний колонтитул
 
         doc.save();
 
-        // Рисуем прямоугольник
+        // Рисуем прямоугольник для колонтитула
         doc.rect(0, footerY, doc.page.width, footerHeight)
-            .fill('#f4f4f4');
+            .fill('#f4f4f4');  // Задаём цвет фона для бокса
 
-        // Текст внутри бокса
+        // Текст нумерации внутри колонтитула
         doc.fillColor('gray')
             .fontSize(10)
-            .text(`Page ${i + 1} of ${totalPages}`, 0, footerY + 10, {
+            .text(`Page ${i + 1} of ${totalPages}`, 0, footerY + 8, {
                 width: doc.page.width,
                 align: 'center',
                 lineBreak: false
