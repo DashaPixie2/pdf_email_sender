@@ -111,7 +111,7 @@ or third party verification will not in any way affect the enforceability of you
         }
     }
 
-    // === Колонтитул: блок + нумерация ===
+    // === Колонтитулы: слева имя, справа нумерация ===
     const pageRange = doc.bufferedPageRange();
     const totalPages = pageRange.count;
 
@@ -120,25 +120,35 @@ or third party verification will not in any way affect the enforceability of you
 
         const footerHeight = 30;
         const footerY = doc.page.height - footerHeight;
-        const text = `Page ${i + 1} of ${totalPages}`;
+
+        const leftText = `Signed by: ${firstName} ${surname}`;
+        const rightText = `Page ${i + 1} of ${totalPages}`;
 
         doc.save();
 
-        // Рисуем блок колонтитула
+        // Фон
         doc.fillColor('#f4f4f4')
             .rect(0, footerY, doc.page.width, footerHeight)
             .fill();
 
-        // Настраиваем шрифт
-        doc.fillColor('gray')
-            .fontSize(10);
+        // Текст
+        doc.fontSize(10).fillColor('gray');
         const textHeight = doc.currentLineHeight();
         const textY = footerY + (footerHeight - textHeight) / 2;
 
-        // Рисуем текст по левому краю и вертикально по центру
-        doc.text(text, 20, textY, {
+        // Слева
+        doc.text(leftText, 20, textY, {
             lineBreak: false,
-            align: 'right'
+            align: 'left'
+        });
+
+        // Справа
+        const rightTextWidth = doc.widthOfString(rightText);
+        const rightX = doc.page.width - rightTextWidth - 20;
+
+        doc.text(rightText, rightX, textY, {
+            lineBreak: false,
+            align: 'left'
         });
 
         doc.restore();
