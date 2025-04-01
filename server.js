@@ -5,12 +5,11 @@ const pdf = require('pdfkit');
 const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
-const cors = require('cors');  // Импортируем библиотеку cors
+const cors = require('cors');
 
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 
-// Настраиваем CORS, чтобы запросы принимались только с твоего сайта
 app.use(cors({
     origin: 'https://dashapixie.com',
     methods: ['POST'],
@@ -20,7 +19,6 @@ app.use(cors({
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
-
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -39,6 +37,12 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const doc = new pdf();
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
+
+    const pageReferences = [];
+    doc.on('pageAdded', () => {
+        pageReferences.push(doc.page);
+    });
+    pageReferences.push(doc.page); // первая страница
 
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
@@ -77,21 +81,21 @@ I agree to release and forever discharge and hold harmless Dasha Pixie from any 
     doc.moveDown();
 
     if (signature) {
-    try {
-        const signaturePath = `./uploads/signature_${Date.now()}.png`;
-        const base64Data = signature.replace(/^data:image\/png;base64,/, "");
-        fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
+        try {
+            const signaturePath = `./uploads/signature_${Date.now()}.png`;
+            const base64Data = signature.replace(/^data:image\/png;base64,/, "");
+            fs.writeFileSync(signaturePath, Buffer.from(base64Data, 'base64'));
 
-        const currentDate = new Date().toLocaleDateString('en-US');
+            const currentDate = new Date().toLocaleDateString('en-US');
 
-        // Первая подпись
-        doc.image(signaturePath, { fit: [150, 80], align: 'center' });
-        doc.moveDown(0.5);
-        doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
-        doc.text(`Date: ${currentDate}`, { align: 'left' });
+            // Первая подпись
+            doc.image(signaturePath, { fit: [150, 80], align: 'center' });
+            doc.moveDown(0.5);
+            doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
+            doc.text(`Date: ${currentDate}`, { align: 'left' });
 
-        doc.moveDown();
-        doc.text(`
+            doc.moveDown();
+            doc.text(`
 I confirm that the signature provided is my own, created by me personally and electronically. 
 I acknowledge that this electronic signature is legally binding in accordance with the U.S. Electronic Signatures in Global and National Commerce Act (E-Sign Act) 
 and Uniform Electronic Transactions Act (UETA). By clicking/tapping/touching/selecting or otherwise interacting with the "Submit" button below, 
@@ -101,21 +105,39 @@ You agree that no certification authority or other third party verification is n
 or third party verification will not in any way affect the enforceability of your E-Signature. You may request a paper version of an electronic record by writing to us.
 `, { align: 'justify' });
 
-        // Вторая подпись под юридическим текстом
-        doc.moveDown();
-        doc.image(signaturePath, { fit: [150, 80], align: 'center' });
-        doc.moveDown(0.5);
-        doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
-        doc.text(`Date: ${currentDate}`, { align: 'left' });
+            // Вторая подпись
+            doc.moveDown();
+            doc.image(signaturePath, { fit: [150, 80], align: 'center' });
+            doc.moveDown(0.5);
+            doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
+            doc.text(`Date: ${currentDate}`, { align: 'left' });
 
-        // Удаляем файл подписи один раз после всех вставок
-        fs.unlinkSync(signaturePath);
-        console.log('✅ Signature added to PDF successfully.');
-    } catch (error) {
-        console.error('❌ Error adding signature to PDF:', error);
+            fs.unlinkSync(signaturePath);
+            console.log('✅ Signature added to PDF successfully.');
+        } catch (error) {
+            console.error('❌ Error adding signature to PDF:', error);
+        }
     }
 
-         }
+    // Колонтитулы с нумерацией
+    const totalPages = pageReferences.length;
+    for (let i = 0; i < totalPages; i++) {
+        doc.switchToPage(i);
+        const footerY = doc.page.height - 30;
+
+        doc.moveTo(50, footerY)
+            .lineTo(doc.page.width - 50, footerY)
+            .strokeColor('lightgray')
+            .lineWidth(0.5)
+            .stroke();
+
+        doc.fontSize(10)
+            .fillColor('gray')
+            .text(`Page ${i + 1} of ${totalPages}`, 50, footerY + 5, {
+                width: doc.page.width - 100,
+                align: 'center'
+            });
+    }
 
     doc.end();
 
