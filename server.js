@@ -38,12 +38,6 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
-    const pageReferences = [];
-    doc.on('pageAdded', () => {
-        pageReferences.push(doc.page);
-    });
-    pageReferences.push(doc.page); // первая страница
-
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12)
@@ -113,16 +107,18 @@ or third party verification will not in any way affect the enforceability of you
             doc.text(`Date: ${currentDate}`, { align: 'left' });
 
             fs.unlinkSync(signaturePath);
-            console.log('✅ Signature added to PDF successfully.');
         } catch (error) {
             console.error('❌ Error adding signature to PDF:', error);
         }
     }
 
-    // Колонтитулы с нумерацией
-    const totalPages = pageReferences.length;
-    for (let i = 0; i < totalPages; i++) {
+    // ===== КОЛОНТИТУЛЫ с нумерацией =====
+    const range = doc.bufferedPageRange(); // { start: 0, count: N }
+    const pageCount = range.count;
+
+    for (let i = 0; i < pageCount; i++) {
         doc.switchToPage(i);
+
         const footerY = doc.page.height - 30;
 
         doc.moveTo(50, footerY)
@@ -133,7 +129,7 @@ or third party verification will not in any way affect the enforceability of you
 
         doc.fontSize(10)
             .fillColor('gray')
-            .text(`Page ${i + 1} of ${totalPages}`, 50, footerY + 5, {
+            .text(`Page ${i + 1} of ${pageCount}`, 50, footerY + 5, {
                 width: doc.page.width - 100,
                 align: 'center'
             });
