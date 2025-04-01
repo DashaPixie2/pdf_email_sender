@@ -113,30 +113,33 @@ or third party verification will not in any way affect the enforceability of you
 
     // === Колонтитул в виде отдельного бокса ===
     const pageRange = doc.bufferedPageRange();
-    const totalPages = pageRange.count;
+const totalPages = pageRange.count;
 
-    for (let i = 0; i < totalPages; i++) {
-        doc.switchToPage(i);
+for (let i = 0; i < totalPages; i++) {
+    doc.switchToPage(i);
 
-        const footerHeight = 30; // Высота колонтитула
-        const footerY = doc.page.height - footerHeight; // Смотрим, где будет размещаться нижний колонтитул
+    const footerY = doc.page.height - 30; // Колонтитул за 30 пикселей от низа
 
-        doc.save();
+    doc.save();
 
-        // Рисуем прямоугольник для колонтитула
-        doc.rect(0, footerY, doc.page.width, footerHeight)
-            .fill('#f4f4f4');  // Задаём цвет фона для бокса
+    // Рисуем блок колонтитула
+    doc.fillColor('#f4f4f4')
+       .rect(0, footerY, doc.page.width, 30)
+       .fill();
 
-        // Текст нумерации внутри колонтитула
-        doc.fillColor('gray')
-            .fontSize(10)
-            .text(`Page ${i + 1} of ${totalPages}`, 0, footerY + 8, {
-                width: doc.page.width,
-                align: 'center',
-                lineBreak: false
-            });
+    // Нумерация по центру внутри блока
+    doc.fillColor('gray')
+       .fontSize(10)
+       .text(`Page ${i + 1} of ${totalPages}`, 0, footerY + 8, {
+           width: doc.page.width,
+           align: 'center',
+           lineBreak: false,
+           baseline: 'middle'
+       });
 
-        doc.restore();
+    doc.restore();
+}
+
     }
 
     doc.end();
