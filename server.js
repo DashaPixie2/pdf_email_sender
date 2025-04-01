@@ -72,6 +72,22 @@ I acknowledge that I have truthfully represented to Dasha Pixie that I am 18 yea
 I acknowledge obtaining of my tattoo is by my choice alone and I consent to the application of the tattoo and to any action or conduct of Dasha Pixie reasonably necessary to perform the tattoo procedure.
 
 I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages, and legal actions arising from or connected in any way with my tattoo of the procedures and conduct used to apply my Tattoo.
+
+PHOTOGRAPH AND VIDEO CONSENT, RELEASE, AND WAIVER OF RIGHTS
+
+I, the undersigned, hereby grant Dasha Pixie (hereafter referred to as "the Artist") and anyone authorized by the Artist the absolute, perpetual, and irrevocable right and permission to photograph, film, record, and/or otherwise capture my likeness, image, voice, tattoo(s), and/or body (in part or in whole), and to use, reproduce, edit, alter, publish, distribute, publicly display, and create derivative works from such materials, in any and all media now known or hereafter developed, for any lawful purpose, including but not limited to promotional, commercial, educational, or artistic purposes, worldwide and in perpetuity, without restriction and without compensation to me.
+
+I understand and agree that:
+
+-The Artist will own full rights, title, and interest, including copyright, in and to all photographs, video recordings, and other media materials created.
+
+-I waive any right to inspect, review, approve, or control the final use of such materials.
+
+-I irrevocably waive any and all rights to royalties, monetary compensation, or other benefits now or in the future arising from the use of such materials.
+
+-I release, discharge, and agree to hold harmless the Artist and all persons acting under the Artist’s authority or with their permission, from any and all claims, demands, or liabilities whatsoever in connection with the use of my likeness, including but not limited to claims for invasion of privacy, defamation, right of publicity, emotional distress, or any other legal or equitable theory.
+
+This release is binding upon me, my heirs, legal representatives, and assigns. I affirm that I am at least eighteen (18) years of age and legally competent to sign this agreement. If I am under eighteen (18), my parent or legal guardian has signed below.
 `);
     doc.moveDown();
 
