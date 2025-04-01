@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
-const pdf = require('pdfkit');
+const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
@@ -34,11 +34,11 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const idBack = req.files['idBack'] ? req.files['idBack'][0] : null;
 
     const pdfPath = `./${firstName}_${surname}_ConsentForm.pdf`;
-    const doc = new pdf({ bufferPages: true }); // Важно!
+    const doc = new PDFDocument({ bufferPages: true });
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
-    // Содержимое PDF
+    // === Контент ===
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12)
@@ -73,6 +73,7 @@ I acknowledge obtaining of my tattoo is by my choice alone and I consent to the 
 
 I agree to release and forever discharge and hold harmless Dasha Pixie from any and all claims, damages, and legal actions arising from or connected in any way with my tattoo of the procedures and conduct used to apply my Tattoo.
 `);
+
     doc.moveDown();
 
     if (signature) {
@@ -83,11 +84,10 @@ I agree to release and forever discharge and hold harmless Dasha Pixie from any 
 
             const currentDate = new Date().toLocaleDateString('en-US');
 
-            // Первая подпись
             doc.image(signaturePath, { fit: [150, 80], align: 'center' });
             doc.moveDown(0.5);
-            doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
-            doc.text(`Date: ${currentDate}`, { align: 'left' });
+            doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`);
+            doc.text(`Date: ${currentDate}`);
 
             doc.moveDown();
             doc.text(`
@@ -100,12 +100,11 @@ You agree that no certification authority or other third party verification is n
 or third party verification will not in any way affect the enforceability of your E-Signature. You may request a paper version of an electronic record by writing to us.
 `, { align: 'justify' });
 
-            // Вторая подпись
             doc.moveDown();
             doc.image(signaturePath, { fit: [150, 80], align: 'center' });
             doc.moveDown(0.5);
-            doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
-            doc.text(`Date: ${currentDate}`, { align: 'left' });
+            doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`);
+            doc.text(`Date: ${currentDate}`);
 
             fs.unlinkSync(signaturePath);
         } catch (error) {
@@ -113,25 +112,22 @@ or third party verification will not in any way affect the enforceability of you
         }
     }
 
-    // === КОЛОНТИТУЛ С НУМЕРАЦИЕЙ ===
+    // === Колонтитулы с нумерацией ===
     const pageRange = doc.bufferedPageRange();
     const totalPages = pageRange.count;
 
     for (let i = 0; i < totalPages; i++) {
         doc.switchToPage(i);
-
         const footerY = doc.page.height - 40;
 
-        doc.save(); // сохранить состояние
+        doc.save();
 
-        // линия
         doc.moveTo(50, footerY)
             .lineTo(doc.page.width - 50, footerY)
             .strokeColor('lightgray')
             .lineWidth(0.5)
             .stroke();
 
-        // текст нумерации
         doc.fontSize(10)
             .fillColor('gray')
             .text(`Page ${i + 1} of ${totalPages}`, 50, footerY + 5, {
@@ -139,10 +135,10 @@ or third party verification will not in any way affect the enforceability of you
                 align: 'center'
             });
 
-        doc.restore(); // восстановить состояние
+        doc.restore();
     }
 
-    doc.end(); // только после всего
+    doc.end();
 
     writeStream.on('finish', async () => {
         const attachments = [{
