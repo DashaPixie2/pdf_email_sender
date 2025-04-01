@@ -105,7 +105,20 @@ on this Document. You consent to be legally bound by this Document's agreement(s
 You agree that no certification authority or other third party verification is necessary to validate your E-Signature and that the lack of such certification 
 or third party verification will not in any way affect the enforceability of your E-Signature. You may request a paper version of an electronic record by writing to us.
 `, { align: 'justify' });
+        
+        // Вторая подпись под юридическим текстом
+        doc.moveDown();
+        doc.image(signaturePath, { fit: [150, 80], align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(10).text(`Signed by: ${firstName} ${surname}`, { align: 'left' });
+        doc.text(`Date: ${currentDate}`, { align: 'left' });
+
+        fs.unlinkSync(signaturePath);
+        console.log('✅ Signature added to PDF successfully.');
+    } catch (error) {
+        console.error('❌ Error adding signature to PDF:', error);
  }
+         }
 
     doc.end();
 
