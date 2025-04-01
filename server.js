@@ -34,10 +34,11 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const idBack = req.files['idBack'] ? req.files['idBack'][0] : null;
 
     const pdfPath = `./${firstName}_${surname}_ConsentForm.pdf`;
-    const doc = new pdf({ bufferPages: true });
+    const doc = new pdf({ bufferPages: true }); // ВАЖНО: bufferPages=true
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
+    // Содержимое формы
     doc.fontSize(20).text('Consent to Application of Tattoo and Release and Waiver of all Claims', { align: 'center' });
     doc.moveDown();
     doc.fontSize(12)
@@ -112,29 +113,31 @@ or third party verification will not in any way affect the enforceability of you
         }
     }
 
-    // ===== КОЛОНТИТУЛЫ с нумерацией =====
-    const range = doc.bufferedPageRange(); // { start: 0, count: N }
-    const pageCount = range.count;
+    // === Колонтитулы со страницами ===
+    const pageRange = doc.bufferedPageRange(); // { start, count }
+    const totalPages = pageRange.count;
 
-    for (let i = 0; i < pageCount; i++) {
+    for (let i = 0; i < totalPages; i++) {
         doc.switchToPage(i);
-
         const footerY = doc.page.height - 30;
 
+        // Линия
         doc.moveTo(50, footerY)
             .lineTo(doc.page.width - 50, footerY)
             .strokeColor('lightgray')
             .lineWidth(0.5)
             .stroke();
 
+        // Нумерация
         doc.fontSize(10)
             .fillColor('gray')
-            .text(`Page ${i + 1} of ${pageCount}`, 50, footerY + 5, {
+            .text(`Page ${i + 1} of ${totalPages}`, 50, footerY + 5, {
                 width: doc.page.width - 100,
                 align: 'center'
             });
     }
 
+    // Заканчиваем PDF
     doc.end();
 
     writeStream.on('finish', async () => {
