@@ -34,7 +34,7 @@ app.post('/send-email', upload.fields([{ name: 'idFront' }, { name: 'idBack' }])
     const idBack = req.files['idBack'] ? req.files['idBack'][0] : null;
 
     const pdfPath = `./${firstName}_${surname}_ConsentForm.pdf`;
-    const doc = new pdf();
+    const doc = new pdf({ bufferPages: true });
     const writeStream = fs.createWriteStream(pdfPath);
     doc.pipe(writeStream);
 
